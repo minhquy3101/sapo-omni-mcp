@@ -209,6 +209,21 @@ describe("get_customer", () => {
 
     expect(result.content[0].text).toBe("Error: Customer not found");
   });
+
+  it("D-4-1: returns customer data with empty recent_orders when orders fetch fails independently", async () => {
+    mocks.client.get.mockImplementation((url: string) => {
+      if (url.includes("/customers/")) return Promise.resolve({ data: { customer: mockCustomer } });
+      return Promise.reject(new Error("503 Service Unavailable"));
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.get_customer({ customer_id: 501 });
+    const body = JSON.parse(result.content[0].text) as Record<string, unknown>;
+
+    expect(body.id).toBe(501);
+    expect(body.recent_orders).toEqual([]);
+    expect((body.metadata as Record<string, unknown>).recent_orders_capped).toBe(false);
+  });
 });
 
 // ── Story 4.2: Create & Update ─────────────────────────────────────────────

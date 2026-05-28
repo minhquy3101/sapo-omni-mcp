@@ -143,23 +143,29 @@ export function registerCustomerTools(server: McpServer, config: Config) {
     "Get full customer profile including all saved addresses, order summary, and recent orders.",
     { customer_id: z.number().int().positive() },
     async ({ customer_id }) => {
-      try {
-        const [customerRes, ordersRes] = await Promise.all([
-          client.get<CustomerResponse>(`/customers/${customer_id}.json`),
-          client.get<OrdersResponse>("/orders.json", {
-            params: { customer_id, limit: 10, status: "any" },
-          }),
-        ]);
-        const recentOrders = ordersRes.data.orders ?? [];
-        return {
-          content: [{ type: "text", text: JSON.stringify(toDetail(customerRes.data.customer, recentOrders), null, 2) }],
-        };
-      } catch (error) {
-        if (error instanceof SapoNotFoundError) {
+      const [customerResult, ordersResult] = await Promise.allSettled([
+        client.get<CustomerResponse>(`/customers/${customer_id}.json`),
+        client.get<OrdersResponse>("/orders.json", {
+          params: { customer_id, limit: 10, status: "any" },
+        }),
+      ]);
+
+      if (customerResult.status === "rejected") {
+        const err = customerResult.reason as Error;
+        if (err instanceof SapoNotFoundError) {
           return { content: [{ type: "text", text: "Error: Customer not found" }] };
         }
-        return handleSapoError(error);
+        return handleSapoError(err);
       }
+
+      const recentOrders =
+        ordersResult.status === "fulfilled"
+          ? (ordersResult.value.data.orders ?? [])
+          : [];
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(toDetail(customerResult.value.data.customer, recentOrders), null, 2) }],
+      };
     },
   );
 

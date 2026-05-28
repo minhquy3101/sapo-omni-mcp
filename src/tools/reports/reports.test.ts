@@ -9,7 +9,6 @@ type ToolHandler = (params: Record<string, unknown>) => Promise<ToolResult>;
 
 const serviceMocks = vi.hoisted(() => ({
   fetchOrders: vi.fn(),
-  fetchProducts: vi.fn(),
 }));
 
 const clientMocks = vi.hoisted(() => {
@@ -19,9 +18,6 @@ const clientMocks = vi.hoisted(() => {
 
 vi.mock("../orders/service.js", () => ({
   fetchOrders: serviceMocks.fetchOrders,
-}));
-vi.mock("../products/service.js", () => ({
-  fetchProducts: serviceMocks.fetchProducts,
 }));
 vi.mock("../../utils/sapo-client.js", () => ({
   createSapoClient: clientMocks.createSapoClient,
@@ -60,15 +56,21 @@ function registerTools() {
 // ── Story 6.2: Order Status Summary ───────────────────────────────────────
 
 describe("order_status_summary", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clientMocks.client.get.mockResolvedValue({ data: { count: 0 } });
+  });
 
   it("returns counts by status and surfaces pending COD orders", async () => {
-    serviceMocks.fetchOrders.mockResolvedValue([
-      { status: "open", financial_status: "paid", payment_gateway: "credit_card", total_price: "100000", created_on: "2026-05-01T10:00:00Z", line_items: [] },
-      { status: "open", financial_status: "pending", payment_gateway: "COD", total_price: "200000", created_on: "2026-05-02T10:00:00Z", line_items: [] },
-      { status: "closed", financial_status: "paid", payment_gateway: "credit_card", total_price: "150000", created_on: "2026-05-03T10:00:00Z", line_items: [] },
-      { status: "cancelled", financial_status: "voided", payment_gateway: "COD", total_price: "80000", created_on: "2026-05-04T10:00:00Z", line_items: [] },
-    ]);
+    serviceMocks.fetchOrders.mockResolvedValue({
+      orders: [
+        { status: "open", financial_status: "paid", payment_gateway: "credit_card", total_price: "100000", created_on: "2026-05-01T10:00:00Z", line_items: [] },
+        { status: "open", financial_status: "pending", payment_gateway: "COD", total_price: "200000", created_on: "2026-05-02T10:00:00Z", line_items: [] },
+        { status: "closed", financial_status: "paid", payment_gateway: "credit_card", total_price: "150000", created_on: "2026-05-03T10:00:00Z", line_items: [] },
+        { status: "cancelled", financial_status: "voided", payment_gateway: "COD", total_price: "80000", created_on: "2026-05-04T10:00:00Z", line_items: [] },
+      ],
+      truncated: false,
+    });
 
     const { handlers } = registerTools();
     const result = await handlers.order_status_summary({
@@ -87,6 +89,42 @@ describe("order_status_summary", () => {
       date_to: "2026-05-26",
       is_complete: true,
     });
+    expect((body.metadata as Record<string, unknown>).warning).toBeUndefined();
+  });
+
+  it("sets is_complete: false and adds warning when fetchOrders is truncated", async () => {
+    serviceMocks.fetchOrders.mockResolvedValue({
+      orders: [
+        { status: "open", financial_status: "paid", payment_gateway: "COD", total_price: "100000", created_on: "2026-05-01T10:00:00Z", line_items: [] },
+      ],
+      truncated: true,
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.order_status_summary({
+      date_from: "2026-05-01",
+      date_to: "2026-05-26",
+    });
+    const body = JSON.parse(result.content[0].text) as Record<string, unknown>;
+    const metadata = body.metadata as Record<string, unknown>;
+
+    expect(metadata.is_complete).toBe(false);
+    expect(typeof metadata.warning).toBe("string");
+    expect((metadata.warning as string)).toContain("25,000");
+  });
+
+  it("fails fast when order count exceeds 25,000", async () => {
+    clientMocks.client.get.mockResolvedValue({ data: { count: 30000 } });
+
+    const { handlers } = registerTools();
+    const result = await handlers.order_status_summary({
+      date_from: "2026-05-01",
+      date_to: "2026-05-26",
+    });
+
+    expect(result.content[0].text).toContain("Error: Too many orders");
+    expect(result.content[0].text).toContain("30,000");
+    expect(serviceMocks.fetchOrders).not.toHaveBeenCalled();
   });
 
   it("rejects missing date_from at schema level (required field)", async () => {
@@ -111,13 +149,19 @@ describe("order_status_summary", () => {
 // ── Story 6.3: Revenue Summary ─────────────────────────────────────────────
 
 describe("revenue_summary", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clientMocks.client.get.mockResolvedValue({ data: { count: 0 } });
+  });
 
   it("returns total revenue, order count, and average order value", async () => {
-    serviceMocks.fetchOrders.mockResolvedValue([
-      { status: "closed", financial_status: "paid", total_price: "300000", created_on: "2026-05-01T10:00:00Z", payment_gateway: "COD", line_items: [], currency: "VND" },
-      { status: "closed", financial_status: "paid", total_price: "200000", created_on: "2026-05-02T10:00:00Z", payment_gateway: "COD", line_items: [], currency: "VND" },
-    ]);
+    serviceMocks.fetchOrders.mockResolvedValue({
+      orders: [
+        { status: "closed", financial_status: "paid", total_price: "300000", created_on: "2026-05-01T10:00:00Z", payment_gateway: "COD", line_items: [], currency: "VND" },
+        { status: "closed", financial_status: "paid", total_price: "200000", created_on: "2026-05-02T10:00:00Z", payment_gateway: "COD", line_items: [], currency: "VND" },
+      ],
+      truncated: false,
+    });
 
     const { handlers } = registerTools();
     const result = await handlers.revenue_summary({
@@ -131,10 +175,46 @@ describe("revenue_summary", () => {
     expect(body.average_order_value).toBe(250000);
     expect(body.currency).toBe("VND");
     expect(body.metadata).toMatchObject({ total_records: 2, is_complete: true });
+    expect((body.metadata as Record<string, unknown>).warning).toBeUndefined();
+  });
+
+  it("sets is_complete: false and adds warning when fetchOrders is truncated", async () => {
+    serviceMocks.fetchOrders.mockResolvedValue({
+      orders: [
+        { status: "closed", financial_status: "paid", total_price: "100000", created_on: "2026-05-01T10:00:00Z", payment_gateway: "COD", line_items: [], currency: "VND" },
+      ],
+      truncated: true,
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.revenue_summary({
+      date_from: "2026-05-01",
+      date_to: "2026-05-26",
+    });
+    const body = JSON.parse(result.content[0].text) as Record<string, unknown>;
+    const metadata = body.metadata as Record<string, unknown>;
+
+    expect(metadata.is_complete).toBe(false);
+    expect(typeof metadata.warning).toBe("string");
+    expect((metadata.warning as string)).toContain("25,000");
+  });
+
+  it("fails fast when paid order count exceeds 25,000", async () => {
+    clientMocks.client.get.mockResolvedValue({ data: { count: 26000 } });
+
+    const { handlers } = registerTools();
+    const result = await handlers.revenue_summary({
+      date_from: "2026-05-01",
+      date_to: "2026-05-26",
+    });
+
+    expect(result.content[0].text).toContain("Error: Too many orders");
+    expect(result.content[0].text).toContain("26,000");
+    expect(serviceMocks.fetchOrders).not.toHaveBeenCalled();
   });
 
   it("returns zero revenue when no paid orders exist", async () => {
-    serviceMocks.fetchOrders.mockResolvedValue([]);
+    serviceMocks.fetchOrders.mockResolvedValue({ orders: [], truncated: false });
 
     const { handlers } = registerTools();
     const result = await handlers.revenue_summary({
@@ -149,10 +229,13 @@ describe("revenue_summary", () => {
   });
 
   it("includes daily_breakdown when include_daily_breakdown: true", async () => {
-    serviceMocks.fetchOrders.mockResolvedValue([
-      { status: "closed", financial_status: "paid", total_price: "300000", created_on: "2026-05-01T10:00:00Z", payment_gateway: "COD", line_items: [] },
-      { status: "closed", financial_status: "paid", total_price: "200000", created_on: "2026-05-02T10:00:00Z", payment_gateway: "COD", line_items: [] },
-    ]);
+    serviceMocks.fetchOrders.mockResolvedValue({
+      orders: [
+        { status: "closed", financial_status: "paid", total_price: "300000", created_on: "2026-05-01T10:00:00Z", payment_gateway: "COD", line_items: [] },
+        { status: "closed", financial_status: "paid", total_price: "200000", created_on: "2026-05-02T10:00:00Z", payment_gateway: "COD", line_items: [] },
+      ],
+      truncated: false,
+    });
 
     const { handlers } = registerTools();
     const result = await handlers.revenue_summary({
@@ -190,24 +273,23 @@ describe("revenue_summary", () => {
 describe("top_products_by_revenue", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns ranked list with product name, revenue, and units sold", async () => {
-    serviceMocks.fetchOrders.mockResolvedValue([
-      {
-        status: "closed",
-        financial_status: "paid",
-        total_price: "500000",
-        created_on: "2026-05-01T10:00:00Z",
-        payment_gateway: "COD",
-        line_items: [
-          { id: 1, product_id: 1, variant_id: 10, price: "100000", quantity: 3, name: "Áo M", sku: "A-M" },
-          { id: 2, product_id: 2, variant_id: 20, price: "200000", quantity: 1, name: "Quần L", sku: "Q-L" },
-        ],
-      },
-    ]);
-    serviceMocks.fetchProducts.mockResolvedValue([
-      { id: 1, name: "Áo thun", variants: [], images: [], status: "active" },
-      { id: 2, name: "Quần jeans", variants: [], images: [], status: "active" },
-    ]);
+  it("returns ranked list using line item names, only paid orders, no catalog fetch", async () => {
+    serviceMocks.fetchOrders.mockResolvedValue({
+      orders: [
+        {
+          status: "closed",
+          financial_status: "paid",
+          total_price: "500000",
+          created_on: "2026-05-01T10:00:00Z",
+          payment_gateway: "COD",
+          line_items: [
+            { id: 1, product_id: 1, variant_id: 10, price: "100000", quantity: 3, name: "Áo M", sku: "A-M" },
+            { id: 2, product_id: 2, variant_id: 20, price: "200000", quantity: 1, name: "Quần L", sku: "Q-L" },
+          ],
+        },
+      ],
+      truncated: false,
+    });
 
     const { handlers } = registerTools();
     const result = await handlers.top_products_by_revenue({
@@ -220,17 +302,29 @@ describe("top_products_by_revenue", () => {
     expect(items).toHaveLength(2);
     expect(items[0]).toMatchObject({
       rank: 1,
-      product_name: "Áo thun",
+      product_name: "Áo M",
       total_revenue: 300000,
       total_units_sold: 3,
     });
     expect(items[1]).toMatchObject({
       rank: 2,
-      product_name: "Quần jeans",
+      product_name: "Quần L",
       total_revenue: 200000,
       total_units_sold: 1,
     });
     expect((body.metadata as Record<string, unknown>).is_complete).toBe(true);
+  });
+
+  it("passes financial_status: paid to fetchOrders", async () => {
+    serviceMocks.fetchOrders.mockResolvedValue({ orders: [], truncated: false });
+
+    const { handlers } = registerTools();
+    await handlers.top_products_by_revenue({ date_from: "2026-05-01", date_to: "2026-05-26" });
+
+    expect(serviceMocks.fetchOrders).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ financial_status: "paid" }),
+    );
   });
 
   it("rejects date range exceeding 30 days", async () => {
@@ -255,10 +349,7 @@ describe("top_products_by_revenue", () => {
       payment_gateway: "COD",
       line_items: [{ id: i, product_id: 1, variant_id: 1, price: "100000", quantity: 1, name: "P", sku: "S" }],
     }));
-    serviceMocks.fetchOrders.mockResolvedValue(manyOrders);
-    serviceMocks.fetchProducts.mockResolvedValue([
-      { id: 1, name: "Áo thun", variants: [], images: [], status: "active" },
-    ]);
+    serviceMocks.fetchOrders.mockResolvedValue({ orders: manyOrders, truncated: false });
 
     const { handlers } = registerTools();
     const result = await handlers.top_products_by_revenue({
@@ -270,6 +361,25 @@ describe("top_products_by_revenue", () => {
 
     expect(metadata.is_complete).toBe(false);
     expect(metadata.note as string).toContain("500 orders");
+  });
+
+  it("marks is_complete: false when fetchOrders is truncated even if under 500 orders", async () => {
+    serviceMocks.fetchOrders.mockResolvedValue({
+      orders: [
+        { status: "closed", financial_status: "paid", total_price: "100000", created_on: "2026-05-01T10:00:00Z", payment_gateway: "COD", line_items: [{ id: 1, product_id: 1, variant_id: 1, price: "100000", quantity: 1, name: "P", sku: "S" }] },
+      ],
+      truncated: true,
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.top_products_by_revenue({
+      date_from: "2026-05-01",
+      date_to: "2026-05-26",
+    });
+    const body = JSON.parse(result.content[0].text) as Record<string, unknown>;
+    const metadata = body.metadata as Record<string, unknown>;
+
+    expect(metadata.is_complete).toBe(false);
   });
 
   it("rejects missing date_from at schema level (required field)", async () => {
@@ -291,7 +401,10 @@ describe("top_products_by_revenue", () => {
 // ── D-6-1: Date validation & D-6-2: Currency note ─────────────────────────
 
 describe("revenue_summary — date validation & currency", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clientMocks.client.get.mockResolvedValue({ data: { count: 0 } });
+  });
 
   it("rejects inverted date range (date_from > date_to)", async () => {
     const { handlers } = registerTools();
@@ -304,7 +417,7 @@ describe("revenue_summary — date validation & currency", () => {
   });
 
   it("returns currency_note when no orders exist in range", async () => {
-    serviceMocks.fetchOrders.mockResolvedValue([]);
+    serviceMocks.fetchOrders.mockResolvedValue({ orders: [], truncated: false });
 
     const { handlers } = registerTools();
     const result = await handlers.revenue_summary({

@@ -4,7 +4,10 @@ import type { Config } from "../../config/index.js";
 import { createSapoClient } from "../../utils/sapo-client.js";
 import { handleSapoError } from "../../utils/sapo-error.js";
 import { fetchOrders } from "../orders/service.js";
-import { fetchProducts } from "../products/service.js";
+
+interface CountResponse {
+  count: number;
+}
 
 const DATE_ONLY = z
   .string()
@@ -25,6 +28,8 @@ function todayString(): string {
 function diffDays(from: string, to: string): number {
   return Math.ceil((new Date(to).getTime() - new Date(from).getTime()) / (1000 * 60 * 60 * 24));
 }
+
+const MAX_ORDERS = 25000;
 
 export function registerReportTools(server: McpServer, config: Config) {
   const client = createSapoClient(config);
@@ -60,7 +65,22 @@ export function registerReportTools(server: McpServer, config: Config) {
       }
 
       try {
-        const orders = await fetchOrders(client, {
+        const countRes = await client.get<CountResponse>("/orders/count.json", {
+          params: {
+            created_on_min: toIsoMin(date_from),
+            created_on_max: toIsoMax(effectiveTo),
+          },
+        });
+        if (countRes.data.count > MAX_ORDERS) {
+          return {
+            content: [{
+              type: "text",
+              text: `Error: Too many orders in date range (${countRes.data.count.toLocaleString()} orders, max ${MAX_ORDERS.toLocaleString()}). Use a shorter date range.`,
+            }],
+          };
+        }
+
+        const { orders, truncated } = await fetchOrders(client, {
           created_on_min: toIsoMin(date_from),
           created_on_max: toIsoMax(effectiveTo),
         });
@@ -78,20 +98,21 @@ export function registerReportTools(server: McpServer, config: Config) {
           }
         }
 
+        const metadata: Record<string, unknown> = {
+          total_records: orders.length,
+          date_from,
+          date_to: effectiveTo,
+          is_complete: !truncated,
+        };
+        if (truncated) {
+          metadata.warning = `Results are based on the first ${MAX_ORDERS.toLocaleString()} orders — total may differ`;
+        }
+
         return {
           content: [{
             type: "text",
             text: JSON.stringify(
-              {
-                ...counts,
-                pending_cod,
-                metadata: {
-                  total_records: orders.length,
-                  date_from,
-                  date_to: effectiveTo,
-                  is_complete: true,
-                },
-              },
+              { ...counts, pending_cod, metadata },
               null,
               2,
             ),
@@ -132,7 +153,23 @@ export function registerReportTools(server: McpServer, config: Config) {
       }
 
       try {
-        const orders = await fetchOrders(client, {
+        const countRes = await client.get<CountResponse>("/orders/count.json", {
+          params: {
+            financial_status: "paid",
+            created_on_min: toIsoMin(date_from),
+            created_on_max: toIsoMax(effectiveTo),
+          },
+        });
+        if (countRes.data.count > MAX_ORDERS) {
+          return {
+            content: [{
+              type: "text",
+              text: `Error: Too many orders in date range (${countRes.data.count.toLocaleString()} paid orders, max ${MAX_ORDERS.toLocaleString()}). Use a shorter date range.`,
+            }],
+          };
+        }
+
+        const { orders, truncated } = await fetchOrders(client, {
           financial_status: "paid",
           created_on_min: toIsoMin(date_from),
           created_on_max: toIsoMax(effectiveTo),
@@ -144,6 +181,16 @@ export function registerReportTools(server: McpServer, config: Config) {
         const currencyDetected = orders[0]?.currency;
         const currency = currencyDetected ?? "VND";
 
+        const metadata: Record<string, unknown> = {
+          total_records: order_count,
+          date_from,
+          date_to: effectiveTo,
+          is_complete: !truncated,
+        };
+        if (truncated) {
+          metadata.warning = `Results are based on the first ${MAX_ORDERS.toLocaleString()} orders — total may differ`;
+        }
+
         const result: Record<string, unknown> = {
           total_revenue,
           order_count,
@@ -152,12 +199,7 @@ export function registerReportTools(server: McpServer, config: Config) {
           ...(currencyDetected === undefined || currencyDetected === null
             ? { currency_note: "Defaulted to VND — no orders in range to detect currency" }
             : {}),
-          metadata: {
-            total_records: order_count,
-            date_from,
-            date_to: effectiveTo,
-            is_complete: true,
-          },
+          metadata,
         };
 
         if (include_daily_breakdown) {
@@ -191,7 +233,7 @@ export function registerReportTools(server: McpServer, config: Config) {
 
   server.tool(
     "top_products_by_revenue",
-    "Ranked products by revenue from order line items. Max 30-day window, 500-order cap.",
+    "Ranked products by revenue from paid order line items. Max 30-day window, 500-order cap.",
     {
       date_from: DATE_ONLY,
       date_to: DATE_ONLY.optional(),
@@ -215,24 +257,20 @@ export function registerReportTools(server: McpServer, config: Config) {
       }
 
       try {
-        const [allOrders, products] = await Promise.all([
-          fetchOrders(client, {
-            created_on_min: toIsoMin(date_from),
-            created_on_max: toIsoMax(effectiveTo),
-          }),
-          fetchProducts(client, {}),
-        ]);
+        const { orders: allOrders, truncated } = await fetchOrders(client, {
+          financial_status: "paid",
+          created_on_min: toIsoMin(date_from),
+          created_on_max: toIsoMax(effectiveTo),
+        });
 
-        const is_complete = allOrders.length <= 500;
+        const is_complete = !truncated && allOrders.length <= 500;
         const orders = allOrders.slice(0, 500);
 
-        const productNameMap = new Map(products.map((p) => [p.id, p.name]));
-
-        const revenueMap = new Map<number, { revenue: number; units: number }>();
+        const revenueMap = new Map<number, { revenue: number; units: number; name: string }>();
         for (const order of orders) {
           for (const item of order.line_items) {
             const revenue = parseFloat(item.price) * item.quantity;
-            const entry = revenueMap.get(item.product_id) ?? { revenue: 0, units: 0 };
+            const entry = revenueMap.get(item.product_id) ?? { revenue: 0, units: 0, name: item.name };
             entry.revenue += revenue;
             entry.units += item.quantity;
             revenueMap.set(item.product_id, entry);
@@ -244,7 +282,7 @@ export function registerReportTools(server: McpServer, config: Config) {
           .map(([product_id, data], index) => ({
             rank: index + 1,
             product_id,
-            product_name: productNameMap.get(product_id) ?? null,
+            product_name: data.name,
             total_revenue: data.revenue,
             total_units_sold: data.units,
           }));

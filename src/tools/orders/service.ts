@@ -16,9 +16,10 @@ export async function fetchOrders(
     created_on_max?: string;
     limit?: number;
   },
-): Promise<SapoOrder[]> {
+): Promise<{ orders: SapoOrder[]; truncated: boolean }> {
   const limit = params.limit ?? 250;
   const all: SapoOrder[] = [];
+  let truncated = false;
 
   for (let page = 1; page <= MAX_PAGES; page++) {
     const { data } = await client.get<OrdersResponse>("/orders.json", {
@@ -26,7 +27,8 @@ export async function fetchOrders(
     });
     all.push(...data.orders);
     if (data.orders.length < limit) break;
+    if (page === MAX_PAGES) truncated = true;
   }
 
-  return all;
+  return { orders: all, truncated };
 }

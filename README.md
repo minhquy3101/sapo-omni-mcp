@@ -26,7 +26,7 @@ Một số tình huống có thể dùng ngay sau khi cấu hình:
 
 ## Tính năng chính
 
-SAPO Omni MCP hiện cung cấp 49 tools trên các nhóm nghiệp vụ:
+SAPO Omni MCP hiện cung cấp 51 tools trên các nhóm nghiệp vụ:
 
 | Nhóm | Khả năng |
 |---|---|
@@ -278,6 +278,8 @@ Tổng hợp doanh thu từ 2026-05-01 đến 2026-05-07 theo từng ngày.
 
 | Tool | Mô tả |
 |---|---|
+| `list_locations` | Danh sách kho/chi nhánh với id, tên, địa chỉ, trạng thái |
+| `get_location` | Chi tiết một kho/chi nhánh theo id |
 | `list_inventory_levels` | Tồn kho theo variant và location |
 | `get_inventory_item` | Thông tin inventory item |
 | `connect_inventory_item` | Kết nối inventory item với location |
@@ -336,6 +338,19 @@ npm run lint              # ESLint
 - Tạo Private App riêng cho MCP, không dùng chung key với tích hợp khác.
 - Cấp quyền tối thiểu theo nhu cầu thực tế.
 - Với production, nên bắt đầu bằng quyền **Chỉ đọc**, sau đó mở dần quyền ghi cho nhóm nghiệp vụ thật sự cần.
+
+## Changelog
+
+### 0.1.2
+- Thêm `list_locations` — danh sách kho/chi nhánh với id, tên, địa chỉ, trạng thái active
+- Thêm `get_location` — chi tiết một kho theo id
+- Fix `list_inventory_levels(location_id)`: trước đây trả về rows của tất cả locations thay vì chỉ location được request
+
+### 0.1.1
+- Fix `get_customer.recent_orders` luôn trả về mảng rỗng: nguyên nhân là thiếu param `page=1` khi gọi SAPO orders API
+
+### 0.1.0
+- Release đầu tiên: 49 tools trên 8 nhóm nghiệp vụ (cửa hàng, sản phẩm, đơn hàng, khách hàng, kho hàng, khuyến mãi, báo cáo, vận chuyển)
 
 ## License
 

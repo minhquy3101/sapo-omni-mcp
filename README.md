@@ -1,5 +1,11 @@
 # SAPO Omni MCP
 
+[![npm version](https://img.shields.io/npm/v/sapo-omni-mcp)](https://www.npmjs.com/package/sapo-omni-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/sapo-omni-mcp)](https://www.npmjs.com/package/sapo-omni-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+> **Phiên bản hiện tại: v0.1.3** — 51 tools · Node.js ≥ 20 · [Changelog](#changelog)
+
 SAPO Omni MCP là MCP Server giúp trợ lý AI như Claude kết nối trực tiếp với SAPO Omni qua Admin API. Thay vì mở dashboard, nhớ endpoint hoặc viết script lặp lại, bạn có thể hỏi và thao tác bằng ngôn ngữ tự nhiên: xem đơn hàng, tra cứu sản phẩm, cập nhật tồn kho, tạo khách hàng, kiểm tra doanh thu hoặc tạo mã khuyến mãi.
 
 Server được xây dựng trên [Model Context Protocol (MCP)](https://modelcontextprotocol.io), chuẩn mở giúp AI sử dụng công cụ bên ngoài một cách có cấu trúc và an toàn hơn.
@@ -343,7 +349,7 @@ npm run lint              # ESLint
 
 ### 0.1.3
 - Fix `create_price_rule` lỗi 422: field `starts_at`/`ends_at` đổi thành `starts_on`/`ends_on` đúng với SAPO API
-- Fix `create_price_rule`: bỏ các fields Shopify-specific không hợp lệ với SAPO (`customer_selection`, `target_type`, `target_selection`, `allocation_method`)
+- Fix `create_price_rule`: bỏ các fields không hợp lệ với SAPO API (`customer_selection`, `target_type`, `target_selection`, `allocation_method`)
 - Fix `update_price_rule`: áp dụng cùng cách fix field date như trên
 
 ### 0.1.2

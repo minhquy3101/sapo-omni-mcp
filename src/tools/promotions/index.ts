@@ -37,11 +37,12 @@ function toListItem(r: SapoPriceRule) {
   return {
     id: r.id,
     title: r.title,
+    status: r.status,
     discount_type: r.discount_type,
     value: r.value,
-    starts_at: r.starts_at,
-    ends_at: r.ends_at,
-    no_expiry: r.ends_at === null,
+    starts_on: r.starts_on,
+    ends_on: r.ends_on,
+    no_expiry: r.ends_on === null,
     times_used: r.times_used,
     usage_limit: r.usage_limit,
   };
@@ -54,8 +55,8 @@ function toDetail(r: SapoPriceRule) {
     prerequisite_collection_ids: r.prerequisite_collection_ids,
     entitled_product_ids: r.entitled_product_ids,
     entitled_collection_ids: r.entitled_collection_ids,
-    created_at: r.created_at,
-    updated_at: r.updated_at,
+    created_on: r.created_on,
+    modified_on: r.modified_on,
   };
 }
 

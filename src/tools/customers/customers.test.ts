@@ -210,7 +210,21 @@ describe("get_customer", () => {
     expect(result.content[0].text).toBe("Error: Customer not found");
   });
 
-  it("D-4-1: returns customer data with empty recent_orders when orders fetch fails independently", async () => {
+  it("BUG-04: does NOT pass status=any to orders fetch (returns populated recent_orders)", async () => {
+    mocks.client.get.mockImplementation((url: string) => {
+      if (url.includes("/customers/")) return Promise.resolve({ data: { customer: mockCustomer } });
+      return Promise.resolve({ data: { orders: [mockOrderSummary] } });
+    });
+
+    const { handlers } = registerTools();
+    await handlers.get_customer({ customer_id: 501 });
+
+    const ordersCall = mocks.client.get.mock.calls.find((call: unknown[]) => (call[0] as string).includes("/orders.json"));
+    expect(ordersCall).toBeDefined();
+    expect(ordersCall?.[1]?.params).not.toHaveProperty("status");
+  });
+
+  it("D-4-1: returns customer data with empty recent_orders and recent_orders_error when orders fetch fails", async () => {
     mocks.client.get.mockImplementation((url: string) => {
       if (url.includes("/customers/")) return Promise.resolve({ data: { customer: mockCustomer } });
       return Promise.reject(new Error("503 Service Unavailable"));
@@ -222,7 +236,10 @@ describe("get_customer", () => {
 
     expect(body.id).toBe(501);
     expect(body.recent_orders).toEqual([]);
-    expect((body.metadata as Record<string, unknown>).recent_orders_capped).toBe(false);
+    const meta = body.metadata as Record<string, unknown>;
+    expect(meta.recent_orders_capped).toBe(false);
+    expect(typeof meta.recent_orders_error).toBe("string");
+    expect(meta.recent_orders_error as string).toContain("503");
   });
 });
 
@@ -297,6 +314,20 @@ describe("update_customer", () => {
 
     expect(result.content[0].text).toContain("Error:");
     expect(mocks.client.put).not.toHaveBeenCalled();
+  });
+
+  it("GAP-03: updates tags as a string field", async () => {
+    mocks.client.put.mockResolvedValue({
+      data: { customer: { ...mockCustomer, tags: "vip,wholesale" } },
+    });
+
+    const { handlers } = registerTools();
+    await handlers.update_customer({ customer_id: 501, tags: "vip,wholesale" });
+
+    expect(mocks.client.put).toHaveBeenCalledWith(
+      "/customers/501.json",
+      expect.objectContaining({ customer: expect.objectContaining({ tags: "vip,wholesale" }) }),
+    );
   });
 
   it("warns when new email is already used by another customer, but update succeeds", async () => {

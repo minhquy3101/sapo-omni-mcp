@@ -45,18 +45,19 @@ export interface SapoLocation {
 export interface SapoPriceRule {
   id: number;
   title: string;
+  status: string;
   discount_type: "percentage" | "fixed_amount" | "fixed_price" | "free_shipping";
   value: string;
-  starts_at: string;
-  ends_at: string | null;
+  starts_on: string;
+  ends_on: string | null;
   usage_limit: number | null;
   times_used: number;
   prerequisite_product_ids: number[];
   prerequisite_collection_ids: number[];
   entitled_product_ids: number[];
   entitled_collection_ids: number[];
-  created_at: string;
-  updated_at: string;
+  created_on: string;
+  modified_on: string;
 }
 
 export interface SapoDiscountCode {

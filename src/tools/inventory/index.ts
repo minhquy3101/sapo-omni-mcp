@@ -224,7 +224,7 @@ export function registerInventoryTools(server: McpServer, config: Config) {
 
   server.tool(
     "adjust_inventory",
-    "Adjust inventory by a relative delta (+N or -N). Prevents adjustments that would result in negative stock.",
+    "Adjust inventory by a relative delta (+N or -N). Prevents negative stock. Requires inventory write permission in SAPO Admin → Apps → Permissions.",
     {
       inventory_item_id: z.number().int().positive(),
       location_id: z.number().int().positive(),

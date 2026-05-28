@@ -166,6 +166,42 @@ describe("list_orders", () => {
     expect(mocks.client.get).not.toHaveBeenCalled();
   });
 
+  it("BUG-01: fulfillment_status='none' post-filters to only null fulfillment orders", async () => {
+    const nullOrder = { ...mockOrder, id: 1, fulfillment_status: null };
+    const shippedOrder = { ...mockOrder, id: 2, fulfillment_status: "shipped" };
+    mocks.client.get.mockImplementation((url: string) => {
+      if (url.includes("/count")) return Promise.resolve({ data: { count: 2 } });
+      return Promise.resolve({ data: { orders: [nullOrder, shippedOrder] } });
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.list_orders({ page: 1, limit: 20, fulfillment_status: "none" });
+    const items = (JSON.parse(result.content[0].text) as Record<string, unknown>).items as Record<string, unknown>[];
+
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe(1);
+    // fulfillment_status param must NOT be sent to SAPO API
+    const ordersCall = mocks.client.get.mock.calls.find((call: unknown[]) => (call[0] as string).includes("/orders.json") && !(call[0] as string).includes("count"));
+    expect(ordersCall?.[1]?.params).not.toHaveProperty("fulfillment_status");
+  });
+
+  it("BUG-01: fulfillment_status='any_unfulfilled' includes null and unshipped orders", async () => {
+    const nullOrder = { ...mockOrder, id: 1, fulfillment_status: null };
+    const unshippedOrder = { ...mockOrder, id: 2, fulfillment_status: "unshipped" };
+    const shippedOrder = { ...mockOrder, id: 3, fulfillment_status: "shipped" };
+    mocks.client.get.mockImplementation((url: string) => {
+      if (url.includes("/count")) return Promise.resolve({ data: { count: 3 } });
+      return Promise.resolve({ data: { orders: [nullOrder, unshippedOrder, shippedOrder] } });
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.list_orders({ page: 1, limit: 20, fulfillment_status: "any_unfulfilled" });
+    const items = (JSON.parse(result.content[0].text) as Record<string, unknown>).items as Record<string, unknown>[];
+
+    expect(items).toHaveLength(2);
+    expect(items.map((i) => i.id)).toEqual(expect.arrayContaining([1, 2]));
+  });
+
   it("includes customer_phone in list item when customer has phone", async () => {
     const orderWithPhone = { ...mockOrder, customer: { ...mockOrder.customer, phone: "0909123456" } };
     mocks.client.get.mockImplementation((url: string) => {
@@ -324,6 +360,23 @@ describe("update_order", () => {
 
     expect(result.content[0].text).toContain("Financial fields cannot be updated");
     expect(mocks.client.put).not.toHaveBeenCalled();
+  });
+
+  it("GAP-02: updates shipping_address and returns it in response", async () => {
+    const updatedAddr = { first_name: "Test", last_name: "Spike", address1: "123 Test St", city: "HCM", country: "VN", phone: "0901234567" };
+    mocks.client.put.mockResolvedValue({
+      data: { order: { ...mockOrder, shipping_address: updatedAddr } },
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.update_order({ order_id: 1001, shipping_address: updatedAddr });
+    const body = JSON.parse(result.content[0].text) as Record<string, unknown>;
+
+    expect(body.shipping_address).toMatchObject({ first_name: "Test", city: "HCM" });
+    expect(mocks.client.put).toHaveBeenCalledWith(
+      "/orders/1001.json",
+      expect.objectContaining({ order: expect.objectContaining({ shipping_address: updatedAddr }) }),
+    );
   });
 });
 

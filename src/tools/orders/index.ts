@@ -91,7 +91,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
 
   server.tool(
     "list_orders",
-    "List orders with filters. Returns order ID, number, status, customer name, total price, and line item count per order.",
+    "List orders with filters. fulfillment_status 'none' = never fulfilled (null in SAPO); 'any_unfulfilled' = null or unshipped; both use client-side filtering.",
     {
       page: z.number().int().positive().default(1),
       limit: z.number().int().min(1).max(250).default(20),
@@ -100,7 +100,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
         .enum(["pending", "authorized", "partially_paid", "paid", "partially_refunded", "refunded", "voided"])
         .optional(),
       fulfillment_status: z
-        .enum(["shipped", "partial", "unshipped", "any"])
+        .enum(["shipped", "partial", "unshipped", "any", "none", "any_unfulfilled"])
         .optional(),
       customer_id: z.number().int().positive().optional(),
       created_on_min: ISO8601_DATE.optional(),
@@ -111,11 +111,14 @@ export function registerOrderTools(server: McpServer, config: Config) {
         return { content: [{ type: "text", text: "Error: created_on_min must be before or equal to created_on_max" }] };
       }
 
+      // "none" and "any_unfulfilled" require client-side filtering — SAPO returns null for unfulfilled
+      const clientSideFilter = fulfillment_status === "none" || fulfillment_status === "any_unfulfilled";
+
       try {
         const params: Record<string, unknown> = { page, limit };
         if (status !== undefined) params.status = status;
         if (financial_status !== undefined) params.financial_status = financial_status;
-        if (fulfillment_status !== undefined) params.fulfillment_status = fulfillment_status;
+        if (fulfillment_status !== undefined && !clientSideFilter) params.fulfillment_status = fulfillment_status;
         if (customer_id !== undefined) params.customer_id = customer_id;
         if (created_on_min !== undefined) params.created_on_min = created_on_min;
         if (created_on_max !== undefined) params.created_on_max = created_on_max;
@@ -123,7 +126,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
         const countParams: Record<string, unknown> = {};
         if (status !== undefined) countParams.status = status;
         if (financial_status !== undefined) countParams.financial_status = financial_status;
-        if (fulfillment_status !== undefined) countParams.fulfillment_status = fulfillment_status;
+        if (fulfillment_status !== undefined && !clientSideFilter) countParams.fulfillment_status = fulfillment_status;
         if (customer_id !== undefined) countParams.customer_id = customer_id;
         if (created_on_min !== undefined) countParams.created_on_min = created_on_min;
         if (created_on_max !== undefined) countParams.created_on_max = created_on_max;
@@ -133,7 +136,14 @@ export function registerOrderTools(server: McpServer, config: Config) {
           client.get<CountResponse>("/orders/count.json", { params: countParams }),
         ]);
 
-        const items = ordersRes.data.orders.map(toListItem);
+        let rawOrders = ordersRes.data.orders;
+        if (fulfillment_status === "none") {
+          rawOrders = rawOrders.filter((o) => o.fulfillment_status === null);
+        } else if (fulfillment_status === "any_unfulfilled") {
+          rawOrders = rawOrders.filter((o) => o.fulfillment_status === null || o.fulfillment_status === "unshipped");
+        }
+
+        const items = rawOrders.map(toListItem);
         return {
           content: [
             {
@@ -251,23 +261,37 @@ export function registerOrderTools(server: McpServer, config: Config) {
 
   server.tool(
     "update_order",
-    "Update non-financial order fields: note, email, phone. Financial fields (line items, total price) cannot be changed.",
+    "Update non-financial order fields: note, email, phone, shipping_address. Financial fields (line items, total price) cannot be changed.",
     {
       order_id: z.number().int().positive(),
       note: z.string().optional(),
       email: z.string().email().optional(),
       phone: z.string().optional(),
+      shipping_address: z
+        .object({
+          first_name: z.string().optional(),
+          last_name: z.string().optional(),
+          address1: z.string().optional(),
+          address2: z.string().optional(),
+          city: z.string().optional(),
+          province: z.string().optional(),
+          zip: z.string().optional(),
+          country: z.string().optional(),
+          phone: z.string().optional(),
+          company: z.string().optional(),
+        })
+        .optional(),
       total_price: z.unknown().optional(),
       line_items: z.unknown().optional(),
       subtotal_price: z.unknown().optional(),
     },
-    async ({ order_id, note, email, phone, total_price, line_items, subtotal_price }) => {
+    async ({ order_id, note, email, phone, shipping_address, total_price, line_items, subtotal_price }) => {
       if (total_price !== undefined || line_items !== undefined || subtotal_price !== undefined) {
         return { content: [{ type: "text", text: "Error: Financial fields cannot be updated via this tool (total_price, line_items, subtotal_price)" }] };
       }
 
-      if (note === undefined && email === undefined && phone === undefined) {
-        return { content: [{ type: "text", text: "Error: At least one field (note, email, phone) must be provided" }] };
+      if (note === undefined && email === undefined && phone === undefined && shipping_address === undefined) {
+        return { content: [{ type: "text", text: "Error: At least one field (note, email, phone, shipping_address) must be provided" }] };
       }
 
       try {
@@ -275,6 +299,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
         if (note !== undefined) payload.note = note;
         if (email !== undefined) payload.email = email;
         if (phone !== undefined) payload.phone = phone;
+        if (shipping_address !== undefined) payload.shipping_address = shipping_address;
 
         const { data } = await client.put<OrderResponse>(`/orders/${order_id}.json`, {
           order: payload,
@@ -290,6 +315,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
                   order_number: o.order_number,
                   note: o.note,
                   email: o.email,
+                  shipping_address: o.shipping_address ?? null,
                   status: o.status,
                 },
                 null,

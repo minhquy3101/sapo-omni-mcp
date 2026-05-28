@@ -38,8 +38,10 @@ function toListItem(c: SapoCustomer) {
   };
 }
 
-function toDetail(c: SapoCustomer, recentOrders: SapoOrder[] = []) {
+function toDetail(c: SapoCustomer, recentOrders: SapoOrder[] = [], recentOrdersError?: string) {
   const capped = recentOrders.length === 10;
+  const metadata: Record<string, unknown> = { recent_orders_capped: capped };
+  if (recentOrdersError) metadata.recent_orders_error = recentOrdersError;
   return {
     id: c.id,
     first_name: c.first_name,
@@ -68,9 +70,7 @@ function toDetail(c: SapoCustomer, recentOrders: SapoOrder[] = []) {
       fulfillment_status: o.fulfillment_status,
       line_item_count: o.line_items.length,
     })),
-    metadata: {
-      recent_orders_capped: capped,
-    },
+    metadata,
   };
 }
 
@@ -146,7 +146,7 @@ export function registerCustomerTools(server: McpServer, config: Config) {
       const [customerResult, ordersResult] = await Promise.allSettled([
         client.get<CustomerResponse>(`/customers/${customer_id}.json`),
         client.get<OrdersResponse>("/orders.json", {
-          params: { customer_id, limit: 10, status: "any" },
+          params: { customer_id, limit: 10 },
         }),
       ]);
 
@@ -162,9 +162,13 @@ export function registerCustomerTools(server: McpServer, config: Config) {
         ordersResult.status === "fulfilled"
           ? (ordersResult.value.data.orders ?? [])
           : [];
+      const recentOrdersError =
+        ordersResult.status === "rejected"
+          ? (ordersResult.reason as Error).message
+          : undefined;
 
       return {
-        content: [{ type: "text", text: JSON.stringify(toDetail(customerResult.value.data.customer, recentOrders), null, 2) }],
+        content: [{ type: "text", text: JSON.stringify(toDetail(customerResult.value.data.customer, recentOrders, recentOrdersError), null, 2) }],
       };
     },
   );
@@ -224,7 +228,7 @@ export function registerCustomerTools(server: McpServer, config: Config) {
 
   server.tool(
     "update_customer",
-    "Update customer contact info. Only provided fields are modified. Warns if new email is already used by another customer.",
+    "Update customer contact info or tags. Only provided fields are modified. Warns if new email is already used by another customer. tags is a comma-separated string.",
     {
       customer_id: z.number().int().positive(),
       email: z.string().email().optional(),
@@ -232,14 +236,16 @@ export function registerCustomerTools(server: McpServer, config: Config) {
       last_name: z.string().optional(),
       phone: z.string().optional(),
       note: z.string().optional(),
+      tags: z.string().optional(),
     },
-    async ({ customer_id, email, first_name, last_name, phone, note }) => {
+    async ({ customer_id, email, first_name, last_name, phone, note, tags }) => {
       const payload: Record<string, unknown> = {};
       if (email !== undefined) payload.email = email;
       if (first_name !== undefined) payload.first_name = first_name;
       if (last_name !== undefined) payload.last_name = last_name;
       if (phone !== undefined) payload.phone = phone;
       if (note !== undefined) payload.note = note;
+      if (tags !== undefined) payload.tags = tags;
 
       if (Object.keys(payload).length === 0) {
         return { content: [{ type: "text", text: "Error: No fields provided to update" }] };

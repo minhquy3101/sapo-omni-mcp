@@ -50,18 +50,19 @@ function registerTools() {
 const mockPriceRule = {
   id: 301,
   title: "Summer Sale 15%",
+  status: "active",
   discount_type: "percentage",
   value: "-15.0",
-  starts_at: "2026-06-01T00:00:00Z",
-  ends_at: "2026-08-31T23:59:59Z",
+  starts_on: "2026-06-01T00:00:00Z",
+  ends_on: "2026-08-31T23:59:59Z",
   usage_limit: null,
   times_used: 5,
   prerequisite_product_ids: [],
   prerequisite_collection_ids: [],
   entitled_product_ids: [],
   entitled_collection_ids: [],
-  created_at: "2026-05-27T07:00:00Z",
-  updated_at: "2026-05-27T07:00:00Z",
+  created_on: "2026-05-27T07:00:00Z",
+  modified_on: "2026-05-27T07:00:00Z",
 };
 
 const mockDiscountCode = {
@@ -101,7 +102,7 @@ describe("list_price_rules", () => {
   });
 
   it("flags no_expiry: true for rule with no end date", async () => {
-    const noExpiryRule = { ...mockPriceRule, ends_at: null };
+    const noExpiryRule = { ...mockPriceRule, ends_on: null };
     mocks.client.get.mockImplementation((url: string) => {
       if (url.includes("/count")) return Promise.resolve({ data: { count: 1 } });
       return Promise.resolve({ data: { price_rules: [noExpiryRule] } });
@@ -113,7 +114,7 @@ describe("list_price_rules", () => {
     const items = body.items as Record<string, unknown>[];
 
     expect(items[0].no_expiry).toBe(true);
-    expect(items[0].ends_at).toBeNull();
+    expect(items[0].ends_on).toBeNull();
   });
 
   it("returns empty list when no price rules exist", async () => {
@@ -161,8 +162,9 @@ describe("get_price_rule", () => {
 
     expect(body.id).toBe(301);
     expect(body.title).toBe("Summer Sale 15%");
+    expect(body.status).toBe("active");
     expect(body.entitled_product_ids).toEqual([]);
-    expect(body.created_at).toBe("2026-05-27T07:00:00Z");
+    expect(body.created_on).toBe("2026-05-27T07:00:00Z");
   });
 
   it("returns 'Price rule not found' for SAPO 404", async () => {
@@ -198,7 +200,7 @@ describe("create_price_rule", () => {
   });
 
   it("creates rule without end_date and includes no-expiry warning", async () => {
-    const noExpiryRule = { ...mockPriceRule, ends_at: null };
+    const noExpiryRule = { ...mockPriceRule, ends_on: null };
     mocks.client.post.mockResolvedValue({ data: { price_rule: noExpiryRule } });
 
     const { handlers } = registerTools();
@@ -228,7 +230,7 @@ describe("update_price_rule", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("updates end_date and returns updated rule", async () => {
-    const updatedRule = { ...mockPriceRule, ends_at: "2026-09-30T23:59:59Z" };
+    const updatedRule = { ...mockPriceRule, ends_on: "2026-09-30T23:59:59Z" };
     mocks.client.put.mockResolvedValue({ data: { price_rule: updatedRule } });
 
     const { handlers } = registerTools();
@@ -238,7 +240,7 @@ describe("update_price_rule", () => {
     });
     const body = JSON.parse(result.content[0].text) as Record<string, unknown>;
 
-    expect(body.ends_at).toBe("2026-09-30T23:59:59Z");
+    expect(body.ends_on).toBe("2026-09-30T23:59:59Z");
     expect(mocks.client.put).toHaveBeenCalledOnce();
   });
 

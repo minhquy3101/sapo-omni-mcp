@@ -197,6 +197,15 @@ describe("create_price_rule", () => {
 
     expect(body.id).toBe(301);
     expect(body.warning).toBeUndefined();
+    expect(mocks.client.post).toHaveBeenCalledWith(
+      "/price_rules.json",
+      expect.objectContaining({
+        price_rule: expect.objectContaining({
+          starts_on: "2026-06-01T00:00:00Z",
+          ends_on: "2026-08-31T23:59:59Z",
+        }),
+      }),
+    );
   });
 
   it("creates rule without end_date and includes no-expiry warning", async () => {

@@ -1,6 +1,6 @@
 {
   "name": "sapo-omni-mcp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MCP Server cho phép Claude AI tương tác với SAPO platform — quản lý sản phẩm, đơn hàng, khách hàng, kho hàng và khuyến mãi",
   "type": "module",
   "main": "dist/index.js",

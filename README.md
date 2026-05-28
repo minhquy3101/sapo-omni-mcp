@@ -341,6 +341,11 @@ npm run lint              # ESLint
 
 ## Changelog
 
+### 0.1.3
+- Fix `create_price_rule` lỗi 422: field `starts_at`/`ends_at` đổi thành `starts_on`/`ends_on` đúng với SAPO API
+- Fix `create_price_rule`: bỏ các fields Shopify-specific không hợp lệ với SAPO (`customer_selection`, `target_type`, `target_selection`, `allocation_method`)
+- Fix `update_price_rule`: áp dụng cùng cách fix field date như trên
+
 ### 0.1.2
 - Thêm `list_locations` — danh sách kho/chi nhánh với id, tên, địa chỉ, trạng thái active
 - Thêm `get_location` — chi tiết một kho theo id

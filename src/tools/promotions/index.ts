@@ -160,13 +160,9 @@ export function registerPromotionTools(server: McpServer, config: Config) {
           title,
           discount_type,
           value,
-          starts_at: start_date,
-          customer_selection: "all",
-          target_type: "line_item",
-          target_selection: "all",
-          allocation_method: "across",
+          starts_on: start_date,
         };
-        if (end_date) payload.ends_at = end_date;
+        if (end_date) payload.ends_on = end_date;
         if (usage_limit !== undefined) payload.usage_limit = usage_limit;
 
         const { data } = await client.post<PriceRuleResponse>("/price_rules.json", {
@@ -211,8 +207,8 @@ export function registerPromotionTools(server: McpServer, config: Config) {
       const payload: Record<string, unknown> = {};
       if (title !== undefined) payload.title = title;
       if (value !== undefined) payload.value = value;
-      if (start_date !== undefined) payload.starts_at = start_date;
-      if (end_date !== undefined) payload.ends_at = end_date;
+      if (start_date !== undefined) payload.starts_on = start_date;
+      if (end_date !== undefined) payload.ends_on = end_date;
       if (usage_limit !== undefined) payload.usage_limit = usage_limit;
 
       if (Object.keys(payload).length === 0) {

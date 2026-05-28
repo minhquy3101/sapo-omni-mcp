@@ -210,7 +210,7 @@ describe("get_customer", () => {
     expect(result.content[0].text).toBe("Error: Customer not found");
   });
 
-  it("BUG-04: does NOT pass status=any to orders fetch (returns populated recent_orders)", async () => {
+  it("BUG-04: passes page=1 and does NOT pass status to orders fetch", async () => {
     mocks.client.get.mockImplementation((url: string) => {
       if (url.includes("/customers/")) return Promise.resolve({ data: { customer: mockCustomer } });
       return Promise.resolve({ data: { orders: [mockOrderSummary] } });
@@ -222,6 +222,7 @@ describe("get_customer", () => {
     const ordersCall = mocks.client.get.mock.calls.find((call: unknown[]) => (call[0] as string).includes("/orders.json"));
     expect(ordersCall).toBeDefined();
     expect(ordersCall?.[1]?.params).not.toHaveProperty("status");
+    expect(ordersCall?.[1]?.params).toHaveProperty("page", 1);
   });
 
   it("D-4-1: returns customer data with empty recent_orders and recent_orders_error when orders fetch fails", async () => {

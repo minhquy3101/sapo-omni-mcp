@@ -146,7 +146,7 @@ export function registerCustomerTools(server: McpServer, config: Config) {
       const [customerResult, ordersResult] = await Promise.allSettled([
         client.get<CustomerResponse>(`/customers/${customer_id}.json`),
         client.get<OrdersResponse>("/orders.json", {
-          params: { customer_id, limit: 10 },
+          params: { customer_id, page: 1, limit: 10 },
         }),
       ]);
 

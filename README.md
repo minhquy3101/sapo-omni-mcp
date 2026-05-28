@@ -18,7 +18,7 @@ MCP Server cho phép Claude AI tương tác trực tiếp với SAPO platform �
 
 ```bash
 # 1. Clone repo
-git clone https://github.com/your-org/sapo-omni-mcp.git
+git clone https://github.com/minhquy3101/sapo-omni-mcp.git
 cd sapo-omni-mcp
 
 # 2. Cài dependencies

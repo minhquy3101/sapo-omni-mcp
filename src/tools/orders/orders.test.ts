@@ -76,7 +76,7 @@ const mockOrder = {
       status: "success",
       tracking_number: "VN123",
       tracking_company: "ViettelPost",
-      created_at: "2026-05-20T09:00:00Z",
+      created_on: "2026-05-20T09:00:00Z",
     },
   ],
   customer: {
@@ -258,7 +258,9 @@ describe("get_order", () => {
       fulfillment_id: 901,
       tracking_number: "VN123",
       tracking_company: "ViettelPost",
+      created_on: "2026-05-20T09:00:00Z",
     });
+    expect(fulfillments[0]).not.toHaveProperty("created_at");
     const lineItems = body.line_items as Record<string, unknown>[];
     expect(lineItems[0]).toMatchObject({ sku: "VDEN-M", quantity: 2 });
   });
@@ -466,6 +468,28 @@ describe("fulfill_order", () => {
 
     expect(result.content[0].text).toBe("Error: Order is already fulfilled");
     expect(mocks.client.post).not.toHaveBeenCalled();
+  });
+
+  it("partial fulfillment: passes line_items to SAPO and returns status: partial", async () => {
+    const partialOrder = { ...mockOrder, fulfillment_status: "partial" };
+    mocks.client.get
+      .mockResolvedValueOnce({ data: { order: mockOrder } })
+      .mockResolvedValueOnce({ data: { order: partialOrder } });
+    mocks.client.post.mockResolvedValue({ data: { fulfillment: { id: 601, status: "success" } } });
+
+    const { handlers } = registerTools();
+    const result = await handlers.fulfill_order({
+      order_id: 1001,
+      line_items: [{ id: 201, quantity: 1 }],
+    });
+    const body = JSON.parse(result.content[0].text) as Record<string, unknown>;
+
+    expect(body.fulfillment_id).toBe(601);
+    expect(body.fulfillment_status).toBe("partial");
+    expect(mocks.client.post).toHaveBeenCalledWith(
+      "/orders/1001/fulfillments.json",
+      expect.objectContaining({ fulfillment: expect.objectContaining({ line_items: [{ id: 201, quantity: 1 }] }) }),
+    );
   });
 });
 

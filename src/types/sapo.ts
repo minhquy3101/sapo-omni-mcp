@@ -102,7 +102,8 @@ export interface SapoFulfillment {
   status: string;
   tracking_number: string | null;
   tracking_company: string | null;
-  created_at: string;
+  created_on: string;
+  line_items?: SapoLineItem[];
 }
 
 export interface SapoOrder {

@@ -66,7 +66,8 @@ function toDetail(o: SapoOrder) {
       status: f.status,
       tracking_number: f.tracking_number ?? null,
       tracking_company: f.tracking_company ?? null,
-      created_at: f.created_at,
+      created_on: f.created_on,
+      line_item_count: f.line_items?.length ?? null,
     })),
     line_items: o.line_items.map((li) => ({
       id: li.id,
@@ -415,13 +416,21 @@ export function registerOrderTools(server: McpServer, config: Config) {
 
   server.tool(
     "fulfill_order",
-    "Create a fulfillment record for an order with optional tracking number and company. IRREVERSIBLE — fulfilled orders cannot be un-fulfilled; cancel the order if needed.",
+    "Create a fulfillment for an order. Omit line_items to fulfill all — or pass line_items to partially fulfill specific items. IRREVERSIBLE — fulfilled orders cannot be un-fulfilled; cancel the order if needed.",
     {
       order_id: z.number().int().positive(),
       tracking_number: z.string().optional(),
       tracking_company: z.string().optional(),
+      line_items: z
+        .array(
+          z.object({
+            id: z.number().int().positive(),
+            quantity: z.number().int().positive(),
+          }),
+        )
+        .optional(),
     },
-    async ({ order_id, tracking_number, tracking_company }) => {
+    async ({ order_id, tracking_number, tracking_company, line_items }) => {
       try {
         const { data: orderData } = await client.get<OrderResponse>(`/orders/${order_id}.json`);
         if (orderData.order.fulfillment_status === "shipped") {
@@ -431,6 +440,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
         const payload: Record<string, unknown> = {};
         if (tracking_number !== undefined) payload.tracking_number = tracking_number;
         if (tracking_company !== undefined) payload.tracking_company = tracking_company;
+        if (line_items !== undefined) payload.line_items = line_items;
 
         const { data } = await client.post<FulfillmentResponse>(
           `/orders/${order_id}/fulfillments.json`,

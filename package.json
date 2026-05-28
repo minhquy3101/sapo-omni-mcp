@@ -8,6 +8,17 @@
     "sapo-omni-mcp": "dist/index.js"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minhquy3101/sapo-omni-mcp.git"
+  },
+  "homepage": "https://github.com/minhquy3101/sapo-omni-mcp#readme",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    ".env.example"
+  ],
   "engines": {
     "node": ">=20"
   },

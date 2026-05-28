@@ -39,6 +39,66 @@ export function registerInventoryTools(server: McpServer, config: Config) {
   // ── Story 2.3: Read operations ────────────────────────────────────────────
 
   server.tool(
+    "list_locations",
+    "List all warehouse/store locations with IDs, addresses, and active status. Use location_id to filter inventory levels.",
+    {},
+    async () => {
+      try {
+        const { data } = await client.get<LocationsResponse>("/locations.json");
+        const locations = data.locations.map((l) => ({
+          id: l.id,
+          name: l.name,
+          active: l.active,
+          address1: l.address1,
+          address2: l.address2,
+          city: l.city,
+          province: l.province,
+          country: l.country,
+          zip: l.zip,
+          phone: l.phone,
+        }));
+        return { content: [{ type: "text", text: JSON.stringify(locations, null, 2) }] };
+      } catch (error) {
+        return handleSapoError(error);
+      }
+    },
+  );
+
+  server.tool(
+    "get_location",
+    "Get details of a single warehouse/store location by ID.",
+    { location_id: z.number().int().positive() },
+    async ({ location_id }) => {
+      try {
+        const { data } = await client.get<LocationsResponse>("/locations.json");
+        const location = data.locations.find((l) => l.id === location_id);
+        if (!location) {
+          return { content: [{ type: "text", text: "Error: Location not found" }] };
+        }
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              id: location.id,
+              name: location.name,
+              active: location.active,
+              address1: location.address1,
+              address2: location.address2,
+              city: location.city,
+              province: location.province,
+              country: location.country,
+              zip: location.zip,
+              phone: location.phone,
+            }, null, 2),
+          }],
+        };
+      } catch (error) {
+        return handleSapoError(error);
+      }
+    },
+  );
+
+  server.tool(
     "list_inventory_levels",
     "List inventory levels filtered by product, location, or inventory item. At least one filter required.",
     {
@@ -89,7 +149,10 @@ export function registerInventoryTools(server: McpServer, config: Config) {
         const levelsRes = await client.get<InventoryLevelsResponse>("/inventory_levels.json", {
           params,
         });
-        const levels = levelsRes.data.inventory_levels;
+        // SAPO returns levels for all locations of matching items — filter to requested location
+        const levels = location_id !== undefined
+          ? levelsRes.data.inventory_levels.filter((l) => l.location_id === location_id)
+          : levelsRes.data.inventory_levels;
 
         if (levels.length === 0) {
           return { content: [{ type: "text", text: JSON.stringify([], null, 2) }] };

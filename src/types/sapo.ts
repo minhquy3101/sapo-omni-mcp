@@ -39,6 +39,14 @@ export interface SapoInventoryItem {
 export interface SapoLocation {
   id: number;
   name: string;
+  address1: string | null;
+  address2: string | null;
+  city: string | null;
+  province: string | null;
+  country: string | null;
+  zip: string | null;
+  phone: string | null;
+  active: boolean;
 }
 
 // Promotions domain

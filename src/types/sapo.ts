@@ -65,8 +65,8 @@ export interface SapoDiscountCode {
   price_rule_id: number;
   code: string;
   usage_count: number;
-  created_at: string;
-  updated_at: string;
+  created_on: string;
+  modified_on: string;
 }
 
 // Customer domain
@@ -165,7 +165,7 @@ export interface SapoRefundTransaction {
 
 export interface SapoRefund {
   id: number;
-  created_at: string;
+  created_on: string;
   note: string | null;
   refund_line_items: SapoRefundLineItem[];
   transactions: SapoRefundTransaction[];
@@ -179,7 +179,7 @@ export interface SapoTransaction {
   amount: string;
   currency: string;
   gateway: string;
-  created_at: string;
+  created_on: string;
   error_code: string | null;
 }
 

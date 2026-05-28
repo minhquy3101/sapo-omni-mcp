@@ -17,7 +17,7 @@ function toTransactionItem(t: SapoTransaction) {
     amount: t.amount,
     currency: t.currency,
     gateway: t.gateway,
-    created_at: t.created_at,
+    created_on: t.created_on,
     error_code: t.error_code ?? null,
   };
 }

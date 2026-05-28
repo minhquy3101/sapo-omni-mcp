@@ -44,7 +44,7 @@ const mockTransaction = {
   amount: "250000",
   currency: "VND",
   gateway: "COD",
-  created_at: "2026-05-20T09:05:00Z",
+  created_on: "2026-05-20T09:05:00Z",
   error_code: null,
 };
 
@@ -68,7 +68,7 @@ describe("list_transactions", () => {
       gateway: "COD",
       error_code: null,
     });
-    expect(data[0].created_at).toBeDefined();
+    expect(data[0].created_on).toBeDefined();
   });
 
   it("returns empty array for COD unpaid order with no transactions", async () => {

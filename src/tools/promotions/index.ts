@@ -304,7 +304,7 @@ export function registerPromotionTools(server: McpServer, config: Config) {
           id: c.id,
           code: c.code,
           usage_count: c.usage_count,
-          created_at: c.created_at,
+          created_on: c.created_on,
         }));
         return { content: [{ type: "text", text: JSON.stringify(codes, null, 2) }] };
       } catch (error) {

@@ -21,7 +21,7 @@ interface OrderResponse {
 function toRefundItem(r: SapoRefund) {
   return {
     refund_id: r.id,
-    created_at: r.created_at,
+    created_on: r.created_on,
     note: r.note ?? null,
     refund_line_items: r.refund_line_items.map((li) => ({
       line_item_id: li.line_item_id,

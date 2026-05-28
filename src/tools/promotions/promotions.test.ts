@@ -70,8 +70,8 @@ const mockDiscountCode = {
   price_rule_id: 301,
   code: "TET2026",
   usage_count: 2,
-  created_at: "2026-05-27T07:00:00Z",
-  updated_at: "2026-05-27T07:00:00Z",
+  created_on: "2026-05-27T07:00:00Z",
+  modified_on: "2026-05-27T07:00:00Z",
 };
 
 // ── Story 5.1: Price Rule Read operations ──────────────────────────────────

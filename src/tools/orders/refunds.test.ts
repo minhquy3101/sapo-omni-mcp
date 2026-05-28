@@ -54,7 +54,7 @@ const mockOrder = {
 
 const mockRefund = {
   id: 3001,
-  created_at: "2026-05-25T10:00:00Z",
+  created_on: "2026-05-25T10:00:00Z",
   note: "Customer returned item",
   refund_line_items: [
     { line_item_id: 2001, variant_id: 201, title: "Ao thun", quantity: 1, subtotal: "125000" },

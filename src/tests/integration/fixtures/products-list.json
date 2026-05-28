@@ -1,0 +1,48 @@
+[
+  {
+    "id": 101,
+    "name": "Ao thun nam",
+    "status": "active",
+    "variants": [
+      {
+        "id": 201,
+        "sku": "AT-001",
+        "price": "125000",
+        "inventory_item_id": 301,
+        "weight": 0.3,
+        "inventory_quantity": 50
+      },
+      {
+        "id": 202,
+        "sku": "AT-002",
+        "price": "125000",
+        "inventory_item_id": 302,
+        "weight": 0.3,
+        "inventory_quantity": 30
+      }
+    ],
+    "images": [
+      {
+        "id": 401,
+        "src": "https://cdn.sapo.vn/products/ao-thun-nam.jpg",
+        "alt": "Ao thun nam"
+      }
+    ]
+  },
+  {
+    "id": 102,
+    "name": "Quan jean nam",
+    "status": "active",
+    "variants": [
+      {
+        "id": 203,
+        "sku": "QJ-001",
+        "price": "350000",
+        "inventory_item_id": 303,
+        "weight": 0.7,
+        "inventory_quantity": 20
+      }
+    ],
+    "images": []
+  }
+]

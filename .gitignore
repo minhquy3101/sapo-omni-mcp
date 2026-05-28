@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+*.local.md
+.claude/
+_bmad/
+_bmad-output/
+coverage/
+*.log

@@ -1,0 +1,28 @@
+{
+  "id": 1002,
+  "order_number": "1002",
+  "status": "open",
+  "financial_status": "pending",
+  "fulfillment_status": null,
+  "total_price": "125000",
+  "note": null,
+  "email": null,
+  "payment_gateway": "COD",
+  "currency": "VND",
+  "shipping_address": null,
+  "billing_address": null,
+  "fulfillments": [],
+  "customer": null,
+  "line_items": [
+    {
+      "id": 2002,
+      "product_id": 101,
+      "variant_id": 201,
+      "name": "Ao thun nam",
+      "sku": "AT-001",
+      "quantity": 1,
+      "price": "125000"
+    }
+  ],
+  "created_on": "2026-05-28T07:00:00Z"
+}

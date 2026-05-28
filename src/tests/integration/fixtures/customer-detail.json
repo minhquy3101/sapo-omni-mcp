@@ -1,0 +1,23 @@
+{
+  "id": 5001,
+  "first_name": "Nguyen",
+  "last_name": "Van A",
+  "email": "nguyenvana@example.com",
+  "phone": "0901111222",
+  "orders_count": 3,
+  "total_spent": "750000",
+  "addresses": [
+    {
+      "id": 6001,
+      "name": "Nguyen Van A",
+      "address1": "123 Le Loi",
+      "address2": null,
+      "city": "Ho Chi Minh",
+      "province": "Ho Chi Minh",
+      "country": "Vietnam",
+      "zip": "700000",
+      "phone": "0901111222",
+      "default": true
+    }
+  ]
+}

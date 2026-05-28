@@ -1,0 +1,14 @@
+[
+  {
+    "inventory_item_id": 100,
+    "location_id": 7001,
+    "available": 15,
+    "updated_at": "2026-05-20T08:00:00Z"
+  },
+  {
+    "inventory_item_id": 200,
+    "location_id": 7001,
+    "available": 3,
+    "updated_at": "2026-05-21T09:00:00Z"
+  }
+]

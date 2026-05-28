@@ -1,0 +1,10 @@
+[
+  {
+    "id": 7001,
+    "name": "Kho chinh",
+    "address1": "456 Nguyen Hue",
+    "city": "Ho Chi Minh",
+    "country_code": "VN",
+    "active": true
+  }
+]

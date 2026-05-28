@@ -1,0 +1,64 @@
+{
+  "id": 1001,
+  "order_number": "1001",
+  "status": "open",
+  "financial_status": "paid",
+  "fulfillment_status": "shipped",
+  "total_price": "250000",
+  "note": "Giao hang truoc 5pm",
+  "email": "customer@example.com",
+  "payment_gateway": "COD",
+  "currency": "VND",
+  "shipping_address": {
+    "first_name": "Nguyen",
+    "last_name": "Van A",
+    "name": "Nguyen Van A",
+    "address1": "123 Le Loi",
+    "address2": null,
+    "city": "Ho Chi Minh",
+    "province": "Ho Chi Minh",
+    "country": "Vietnam",
+    "zip": "700000",
+    "phone": "0901234567"
+  },
+  "billing_address": {
+    "first_name": "Nguyen",
+    "last_name": "Van A",
+    "name": "Nguyen Van A",
+    "address1": "123 Le Loi",
+    "address2": null,
+    "city": "Ho Chi Minh",
+    "province": "Ho Chi Minh",
+    "country": "Vietnam",
+    "zip": "700000",
+    "phone": "0901234567"
+  },
+  "fulfillments": [
+    {
+      "id": 901,
+      "status": "success",
+      "tracking_number": "VN123456",
+      "tracking_company": "ViettelPost",
+      "created_at": "2026-05-21T10:00:00Z"
+    }
+  ],
+  "customer": {
+    "id": 501,
+    "email": "customer@example.com",
+    "first_name": "Nguyen",
+    "last_name": "Van A",
+    "phone": "0901234567"
+  },
+  "line_items": [
+    {
+      "id": 2001,
+      "product_id": 101,
+      "variant_id": 201,
+      "name": "Ao thun nam",
+      "sku": "AT-001",
+      "quantity": 2,
+      "price": "125000"
+    }
+  ],
+  "created_on": "2026-05-20T09:00:00Z"
+}

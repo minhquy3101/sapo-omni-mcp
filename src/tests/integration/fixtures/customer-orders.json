@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1010,
+    "order_number": "1010",
+    "status": "closed",
+    "financial_status": "paid",
+    "fulfillment_status": "shipped",
+    "total_price": "300000",
+    "note": null,
+    "email": "nguyenvana@example.com",
+    "payment_gateway": "COD",
+    "customer": { "id": 5001, "first_name": "Nguyen", "last_name": "Van A", "email": "nguyenvana@example.com", "phone": "0901111222" },
+    "line_items": [
+      { "id": 8001, "product_id": 1, "variant_id": 10, "name": "Ao thun den - M", "sku": "ATD-M", "quantity": 2, "price": "150000" }
+    ],
+    "created_on": "2026-04-15T10:00:00Z"
+  },
+  {
+    "id": 1011,
+    "order_number": "1011",
+    "status": "open",
+    "financial_status": "pending",
+    "fulfillment_status": null,
+    "total_price": "200000",
+    "note": null,
+    "email": "nguyenvana@example.com",
+    "payment_gateway": "COD",
+    "customer": { "id": 5001, "first_name": "Nguyen", "last_name": "Van A", "email": "nguyenvana@example.com", "phone": "0901111222" },
+    "line_items": [
+      { "id": 8002, "product_id": 2, "variant_id": 20, "name": "Quan jeans - L", "sku": "QJ-L", "quantity": 1, "price": "200000" }
+    ],
+    "created_on": "2026-05-01T14:00:00Z"
+  }
+]

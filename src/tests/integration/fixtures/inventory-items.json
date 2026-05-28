@@ -1,0 +1,20 @@
+[
+  {
+    "id": 100,
+    "sku": "ATD-M",
+    "tracked": true,
+    "requires_shipping": true,
+    "cost": "80000",
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-05-01T00:00:00Z"
+  },
+  {
+    "id": 200,
+    "sku": "QJ-L",
+    "tracked": true,
+    "requires_shipping": true,
+    "cost": "150000",
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-05-01T00:00:00Z"
+  }
+]

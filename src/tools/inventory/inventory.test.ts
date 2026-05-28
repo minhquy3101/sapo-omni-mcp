@@ -287,4 +287,55 @@ describe("set_inventory_levels_multi", () => {
     expect(body.records[0].new_quantity).toBe(25);
     expect(mocks.client.post).not.toHaveBeenCalled();
   });
+
+  it("executes bulk set when dry_run: false and returns updated levels", async () => {
+    mocks.client.get.mockImplementation((url: string) => {
+      if (url.includes("/inventory_items")) {
+        return Promise.resolve({ data: { inventory_items: [mockInventoryItem] } });
+      }
+      if (url.includes("/locations")) {
+        return Promise.resolve({ data: { locations: mockLocations } });
+      }
+      return Promise.resolve({ data: { inventory_levels: [mockInventoryLevel] } });
+    });
+    mocks.client.post.mockResolvedValue({
+      data: { inventory_level: { inventory_item_id: 100, location_id: 1, available: 25 } },
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.set_inventory_levels_multi({
+      records: [{ inventory_item_id: 100, location_id: 1, available: 25 }],
+      dry_run: false,
+    });
+    const body = JSON.parse(result.content[0].text) as { updated: { available: number }[] };
+
+    expect(body.updated).toHaveLength(1);
+    expect(body.updated[0].available).toBe(25);
+    expect(mocks.client.post).toHaveBeenCalledWith(
+      "/inventory_levels/set.json",
+      expect.objectContaining({ inventory_item_id: 100, location_id: 1, available: 25 }),
+    );
+  });
+
+  it("returns unconnected error when item is not linked to location", async () => {
+    mocks.client.get.mockImplementation((url: string) => {
+      if (url.includes("/inventory_items")) {
+        return Promise.resolve({ data: { inventory_items: [mockInventoryItem] } });
+      }
+      if (url.includes("/locations")) {
+        return Promise.resolve({ data: { locations: mockLocations } });
+      }
+      return Promise.resolve({ data: { inventory_levels: [] } });
+    });
+    mocks.client.post.mockRejectedValue(new SapoValidationError("location not connected"));
+
+    const { handlers } = registerTools();
+    const result = await handlers.set_inventory_levels_multi({
+      records: [{ inventory_item_id: 100, location_id: 1, available: 5 }],
+      dry_run: false,
+    });
+
+    expect(result.content[0].text).toContain("connect_inventory_item");
+    expect(result.content[0].text).toContain("Error:");
+  });
 });

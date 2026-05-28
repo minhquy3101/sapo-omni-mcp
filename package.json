@@ -4,6 +4,9 @@
   "description": "MCP Server cho phép Claude AI tương tác với SAPO platform — quản lý sản phẩm, đơn hàng, khách hàng, kho hàng và khuyến mãi",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "sapo-omni-mcp": "dist/index.js"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=20"

@@ -124,6 +124,7 @@ describe("list_orders", () => {
       order_number: "1001",
       status: "open",
       customer_name: "Nguyen Van A",
+      customer_phone: null,
       total_price: "250000",
       line_item_count: 1,
     });
@@ -163,6 +164,20 @@ describe("list_orders", () => {
     expect(result.content[0].text).toContain("Error:");
     expect(result.content[0].text).toContain("created_on_min");
     expect(mocks.client.get).not.toHaveBeenCalled();
+  });
+
+  it("includes customer_phone in list item when customer has phone", async () => {
+    const orderWithPhone = { ...mockOrder, customer: { ...mockOrder.customer, phone: "0909123456" } };
+    mocks.client.get.mockImplementation((url: string) => {
+      if (url.includes("/count")) return Promise.resolve({ data: { count: 1 } });
+      return Promise.resolve({ data: { orders: [orderWithPhone] } });
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.list_orders({ page: 1, limit: 20 });
+    const items = (JSON.parse(result.content[0].text) as Record<string, unknown>).items as Record<string, unknown>[];
+
+    expect(items[0].customer_phone).toBe("0909123456");
   });
 });
 

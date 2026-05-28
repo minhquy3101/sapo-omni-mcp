@@ -35,13 +35,29 @@ export class SapoRateLimitError extends SapoError {
 }
 
 export class SapoValidationError extends SapoError {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    public readonly details?: Record<string, string[]>,
+  ) {
     super(message, 422);
     this.name = "SapoValidationError";
   }
 }
 
 export function handleSapoError(error: unknown): McpErrorResult {
+  if (error instanceof SapoPermissionError) {
+    return {
+      content: [{ type: "text", text: `Error: ${error.message}\nHint: ${error.hint}` }],
+    };
+  }
+  if (error instanceof SapoValidationError && error.details) {
+    const detailLines = Object.entries(error.details)
+      .map(([field, msgs]) => `  ${field}: ${msgs.join(", ")}`)
+      .join("\n");
+    return {
+      content: [{ type: "text", text: `Error: ${error.message}\nDetails:\n${detailLines}` }],
+    };
+  }
   const msg = error instanceof Error ? error.message : "Unknown error";
   return { content: [{ type: "text", text: `Error: ${msg}` }] };
 }

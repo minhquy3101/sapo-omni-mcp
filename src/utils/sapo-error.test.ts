@@ -32,6 +32,13 @@ describe("SapoError subclasses", () => {
   it("SapoValidationError has statusCode 422", () => {
     const e = new SapoValidationError("Invalid input");
     expect(e.statusCode).toBe(422);
+    expect(e.details).toBeUndefined();
+  });
+
+  it("SapoValidationError stores details when provided", () => {
+    const details = { base: ["Title can't be blank"], sku: ["SKU already taken"] };
+    const e = new SapoValidationError("Unprocessable Entity", details);
+    expect(e.details).toEqual(details);
   });
 });
 
@@ -50,13 +57,32 @@ describe("handleSapoError", () => {
     });
   });
 
-  it("handles SapoPermissionError with hint preserved in message", () => {
+  it("handles SapoPermissionError by surfacing hint", () => {
     const e = new SapoPermissionError(
       "Store info permission not enabled",
       "Go to SAPO Admin → Apps → Permissions",
     );
     const result = handleSapoError(e);
-    expect(result.content[0].text).toBe("Error: Store info permission not enabled");
+    expect(result.content[0].text).toBe(
+      "Error: Store info permission not enabled\nHint: Go to SAPO Admin → Apps → Permissions",
+    );
+  });
+
+  it("handles SapoValidationError with details by listing field errors", () => {
+    const e = new SapoValidationError("Unprocessable Entity", {
+      base: ["Title can't be blank"],
+      sku: ["SKU already taken"],
+    });
+    const result = handleSapoError(e);
+    expect(result.content[0].text).toContain("Error: Unprocessable Entity");
+    expect(result.content[0].text).toContain("base: Title can't be blank");
+    expect(result.content[0].text).toContain("sku: SKU already taken");
+  });
+
+  it("handles SapoValidationError without details as plain error", () => {
+    const e = new SapoValidationError("Inventory item must be connected");
+    const result = handleSapoError(e);
+    expect(result.content[0].text).toBe("Error: Inventory item must be connected");
   });
 });
 

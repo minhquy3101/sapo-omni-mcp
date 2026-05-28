@@ -42,6 +42,7 @@ function toListItem(o: SapoOrder) {
     fulfillment_status: o.fulfillment_status,
     total_price: o.total_price,
     customer_name: customerName,
+    customer_phone: o.customer?.phone ?? null,
     line_item_count: o.line_items.length,
     created_on: o.created_on,
   };
@@ -388,7 +389,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
 
   server.tool(
     "fulfill_order",
-    "Create a fulfillment record for an order with optional tracking number and company.",
+    "Create a fulfillment record for an order with optional tracking number and company. IRREVERSIBLE — fulfilled orders cannot be un-fulfilled; cancel the order if needed.",
     {
       order_id: z.number().int().positive(),
       tracking_number: z.string().optional(),

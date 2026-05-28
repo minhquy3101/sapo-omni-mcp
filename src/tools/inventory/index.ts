@@ -72,6 +72,8 @@ export function registerInventoryTools(server: McpServer, config: Config) {
             params: { inventory_item_ids: itemIds },
           });
           const items = levelsRes.data.inventory_levels.map((level) => ({
+            inventory_item_id: level.inventory_item_id,
+            location_id: level.location_id,
             sku: skuMap.get(level.inventory_item_id) ?? null,
             product_name: product.name,
             location_name: locationMap.get(level.location_id) ?? null,
@@ -100,6 +102,8 @@ export function registerInventoryTools(server: McpServer, config: Config) {
         const skuMap = new Map(itemsRes.data.inventory_items.map((item) => [item.id, item.sku]));
 
         const result = levels.map((level) => ({
+          inventory_item_id: level.inventory_item_id,
+          location_id: level.location_id,
           sku: skuMap.get(level.inventory_item_id) ?? null,
           product_name: null,
           location_name: locationMap.get(level.location_id) ?? null,
@@ -277,7 +281,7 @@ export function registerInventoryTools(server: McpServer, config: Config) {
 
   server.tool(
     "set_inventory_level",
-    "Set absolute inventory level. Use dry_run: true (default) to preview before writing.",
+    "Set absolute inventory level. Use dry_run: true (default) to preview before writing. Inventory item must be connected to the location first via connect_inventory_item.",
     {
       inventory_item_id: z.number().int().positive(),
       location_id: z.number().int().positive(),

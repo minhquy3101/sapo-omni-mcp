@@ -174,6 +174,8 @@ describe("revenue_summary", () => {
     expect(body.order_count).toBe(2);
     expect(body.average_order_value).toBe(250000);
     expect(body.currency).toBe("VND");
+    expect(typeof body.scope_note).toBe("string");
+    expect(body.scope_note as string).toContain("paid");
     expect(body.metadata).toMatchObject({ total_records: 2, is_complete: true });
     expect((body.metadata as Record<string, unknown>).warning).toBeUndefined();
   });
@@ -273,7 +275,7 @@ describe("revenue_summary", () => {
 describe("top_products_by_revenue", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns ranked list using line item names, only paid orders, no catalog fetch", async () => {
+  it("returns ranked list using line item names across all orders, no catalog fetch", async () => {
     serviceMocks.fetchOrders.mockResolvedValue({
       orders: [
         {
@@ -315,7 +317,7 @@ describe("top_products_by_revenue", () => {
     expect((body.metadata as Record<string, unknown>).is_complete).toBe(true);
   });
 
-  it("passes financial_status: paid to fetchOrders", async () => {
+  it("does NOT filter by financial_status — counts all orders as demand signal", async () => {
     serviceMocks.fetchOrders.mockResolvedValue({ orders: [], truncated: false });
 
     const { handlers } = registerTools();
@@ -323,8 +325,19 @@ describe("top_products_by_revenue", () => {
 
     expect(serviceMocks.fetchOrders).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ financial_status: "paid" }),
+      expect.not.objectContaining({ financial_status: expect.anything() }),
     );
+  });
+
+  it("includes scope_note in the response", async () => {
+    serviceMocks.fetchOrders.mockResolvedValue({ orders: [], truncated: false });
+
+    const { handlers } = registerTools();
+    const result = await handlers.top_products_by_revenue({ date_from: "2026-05-01", date_to: "2026-05-26" });
+    const body = JSON.parse(result.content[0].text) as Record<string, unknown>;
+
+    expect(typeof body.scope_note).toBe("string");
+    expect(body.scope_note as string).toContain("pending COD");
   });
 
   it("rejects date range exceeding 30 days", async () => {

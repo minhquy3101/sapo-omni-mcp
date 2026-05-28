@@ -140,6 +140,15 @@ describe("SapoClient response interceptor", () => {
     await expect(errFn(axiosError(422))).rejects.toBeInstanceOf(SapoValidationError);
   });
 
+  it("attaches errors map to SapoValidationError when SAPO returns errors body", async () => {
+    const errFn = mocks.capturedErrHandler.fn!;
+    const errBody = { errors: { base: ["Title can't be blank"], sku: ["SKU taken"] } };
+    await errFn(axiosError(422, errBody)).catch((e: unknown) => {
+      expect(e instanceof SapoValidationError).toBe(true);
+      expect((e as SapoValidationError).details).toEqual(errBody.errors);
+    });
+  });
+
   it("translates unknown 5xx to base SapoError", async () => {
     const errFn = mocks.capturedErrHandler.fn!;
     await errFn(axiosError(500, { message: "Internal error" })).catch((e: unknown) => {
@@ -156,14 +165,14 @@ describe("SapoClient response interceptor", () => {
 });
 
 describe("handleSapoError in catch block", () => {
-  it("returns correctly formatted MCP response for SapoPermissionError", () => {
+  it("returns correctly formatted MCP response for SapoPermissionError with hint", () => {
     const e = new SapoPermissionError(
       "Store info permission not enabled",
       "Go to SAPO Admin → Apps → Permissions",
     );
     const result = handleSapoError(e);
     expect(result.content[0].text).toBe(
-      "Error: Store info permission not enabled",
+      "Error: Store info permission not enabled\nHint: Go to SAPO Admin → Apps → Permissions",
     );
   });
 

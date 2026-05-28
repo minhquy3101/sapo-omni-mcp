@@ -69,9 +69,31 @@ describe("list_inventory_levels", () => {
 
     expect(body).toHaveLength(1);
     expect(body[0]).toMatchObject({
+      inventory_item_id: 100,
+      location_id: 1,
       sku: "VDEN-M",
       product_name: "Áo thun đen",
       location_name: "Kho Hà Nội",
+      available: 10,
+    });
+  });
+
+  it("returns inventory_item_id and location_id when filtering by location_id", async () => {
+    mocks.client.get.mockImplementation((url: string) => {
+      if (url.includes("/locations")) return Promise.resolve({ data: { locations: mockLocations } });
+      if (url.includes("/inventory_items")) return Promise.resolve({ data: { inventory_items: [mockInventoryItem] } });
+      return Promise.resolve({ data: { inventory_levels: [mockInventoryLevel] } });
+    });
+
+    const { handlers } = registerTools();
+    const result = await handlers.list_inventory_levels({ location_id: 1 });
+    const body = JSON.parse(result.content[0].text) as Record<string, unknown>[];
+
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({
+      inventory_item_id: 100,
+      location_id: 1,
+      sku: "VDEN-M",
       available: 10,
     });
   });

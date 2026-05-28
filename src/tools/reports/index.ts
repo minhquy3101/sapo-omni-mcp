@@ -4,6 +4,7 @@ import type { Config } from "../../config/index.js";
 import { createSapoClient } from "../../utils/sapo-client.js";
 import { handleSapoError } from "../../utils/sapo-error.js";
 import { fetchOrders } from "../orders/service.js";
+import { SCOPE_NOTES } from "../../utils/report-semantics.js";
 
 interface CountResponse {
   count: number;
@@ -199,6 +200,7 @@ export function registerReportTools(server: McpServer, config: Config) {
           ...(currencyDetected === undefined || currencyDetected === null
             ? { currency_note: "Defaulted to VND — no orders in range to detect currency" }
             : {}),
+          scope_note: SCOPE_NOTES.revenue_summary,
           metadata,
         };
 
@@ -233,7 +235,7 @@ export function registerReportTools(server: McpServer, config: Config) {
 
   server.tool(
     "top_products_by_revenue",
-    "Ranked products by revenue from paid order line items. Max 30-day window, 500-order cap.",
+    "Ranked products by revenue across all orders (demand signal). Max 30-day window, 500-order cap.",
     {
       date_from: DATE_ONLY,
       date_to: DATE_ONLY.optional(),
@@ -258,7 +260,6 @@ export function registerReportTools(server: McpServer, config: Config) {
 
       try {
         const { orders: allOrders, truncated } = await fetchOrders(client, {
-          financial_status: "paid",
           created_on_min: toIsoMin(date_from),
           created_on_max: toIsoMax(effectiveTo),
         });
@@ -299,7 +300,7 @@ export function registerReportTools(server: McpServer, config: Config) {
         }
 
         return {
-          content: [{ type: "text", text: JSON.stringify({ items, metadata }, null, 2) }],
+          content: [{ type: "text", text: JSON.stringify({ items, scope_note: SCOPE_NOTES.top_products_by_revenue, metadata }, null, 2) }],
         };
       } catch (error) {
         return handleSapoError(error);

@@ -52,8 +52,12 @@ export class SapoClient {
                 : undefined;
               return Promise.reject(new SapoRateLimitError(retryAfter));
             }
-            case 422:
-              return Promise.reject(new SapoValidationError(message));
+            case 422: {
+              const details = (data as Record<string, unknown>)?.errors as
+                | Record<string, string[]>
+                | undefined;
+              return Promise.reject(new SapoValidationError(message, details));
+            }
             default:
               return Promise.reject(new SapoError(message, status));
           }

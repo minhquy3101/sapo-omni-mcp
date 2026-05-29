@@ -57,6 +57,7 @@ const mockOrder = {
   note: null,
   email: "customer@example.com",
   payment_gateway: "COD",
+  source_name: "web",
   shipping_address: {
     first_name: "Nguyen",
     last_name: "Van A",
@@ -123,6 +124,7 @@ describe("list_orders", () => {
       id: 1001,
       order_number: "1001",
       status: "open",
+      source_name: "web",
       customer_name: "Nguyen Van A",
       customer_phone: null,
       total_price: "250000",
@@ -247,6 +249,7 @@ describe("get_order", () => {
 
     expect(body.id).toBe(1001);
     expect(body.order_number).toBe("1001");
+    expect(body.source_name).toBe("web");
     expect(body.payment_gateway).toBe("COD");
     const shipping = body.shipping_address as Record<string, unknown>;
     expect(shipping.city).toBe("Ho Chi Minh");

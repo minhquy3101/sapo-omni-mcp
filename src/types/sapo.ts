@@ -127,6 +127,7 @@ export interface SapoOrder {
   note: string | null;
   email: string | null;
   payment_gateway: string | null;
+  source_name: string | null;
   currency?: string;
   shipping_address?: SapoOrderAddress | null;
   billing_address?: SapoOrderAddress | null;

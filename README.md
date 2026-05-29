@@ -4,7 +4,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/sapo-omni-mcp)](https://www.npmjs.com/package/sapo-omni-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **Phiên bản hiện tại: v0.2.0** — 51 tools · Node.js ≥ 20 · [Changelog](#changelog)
+> **Phiên bản hiện tại: v0.2.1** — 51 tools · Node.js ≥ 20 · [Changelog](#changelog)
 
 SAPO Omni MCP là MCP Server giúp trợ lý AI như Claude kết nối trực tiếp với SAPO Omni qua Admin API. Thay vì mở dashboard, nhớ endpoint hoặc viết script lặp lại, bạn có thể hỏi và thao tác bằng ngôn ngữ tự nhiên: xem đơn hàng, tra cứu sản phẩm, cập nhật tồn kho, tạo khách hàng, kiểm tra doanh thu hoặc tạo mã khuyến mãi.
 
@@ -346,6 +346,9 @@ npm run lint              # ESLint
 - Với production, nên bắt đầu bằng quyền **Chỉ đọc**, sau đó mở dần quyền ghi cho nhóm nghiệp vụ thật sự cần.
 
 ## Changelog
+
+### 0.2.1
+- Thêm field `source_name` vào response của `list_orders` và `get_order` — cho biết kênh bán hàng tạo đơn (ví dụ: `web`, `pos`, `facebook`, `instagram`)
 
 ### 0.2.0
 - Fix `list_orders`: `status=any` truyền lên SAPO API trả về 0 kết quả — giờ bỏ qua param khi giá trị là `any` (tương đương lấy tất cả trạng thái)

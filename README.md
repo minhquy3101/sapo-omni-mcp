@@ -89,7 +89,7 @@ SAPO dùng Private App để cấp API Key và API Secret cho tích hợp qua Ad
 
 1. Đăng nhập trang quản trị SAPO.
 2. Vào menu **Ứng dụng**.
-3. Lướt tới phần **Bạn đang làm việc với nhà phát triển?** và chọn **Ứng dụng riêng**.
+3. Chọn **Ứng dụng riêng**.
 4. Chọn **Tạo ứng dụng riêng**.
 5. Nhập **Tên ứng dụng** và **Email liên hệ**.
 6. Cấp quyền cho các nhóm dữ liệu MCP cần dùng.

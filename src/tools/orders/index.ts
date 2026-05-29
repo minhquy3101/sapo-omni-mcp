@@ -117,7 +117,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
 
       try {
         const params: Record<string, unknown> = { page, limit };
-        if (status !== undefined) params.status = status;
+        if (status !== undefined && status !== "any") params.status = status;
         if (financial_status !== undefined) params.financial_status = financial_status;
         if (fulfillment_status !== undefined && !clientSideFilter) params.fulfillment_status = fulfillment_status;
         if (customer_id !== undefined) params.customer_id = customer_id;
@@ -125,7 +125,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
         if (created_on_max !== undefined) params.created_on_max = created_on_max;
 
         const countParams: Record<string, unknown> = {};
-        if (status !== undefined) countParams.status = status;
+        if (status !== undefined && status !== "any") countParams.status = status;
         if (financial_status !== undefined) countParams.financial_status = financial_status;
         if (fulfillment_status !== undefined && !clientSideFilter) countParams.fulfillment_status = fulfillment_status;
         if (customer_id !== undefined) countParams.customer_id = customer_id;
@@ -175,7 +175,7 @@ export function registerOrderTools(server: McpServer, config: Config) {
     async ({ status, financial_status, fulfillment_status, customer_id, created_on_min, created_on_max }) => {
       try {
         const params: Record<string, unknown> = {};
-        if (status !== undefined) params.status = status;
+        if (status !== undefined && status !== "any") params.status = status;
         if (financial_status !== undefined) params.financial_status = financial_status;
         if (fulfillment_status !== undefined) params.fulfillment_status = fulfillment_status;
         if (customer_id !== undefined) params.customer_id = customer_id;
